@@ -2,8 +2,9 @@ use serde_derive::{ Serialize, Deserialize };
 use crate::backends::Backend;
 use std::process::{ Command, Stdio };
 use std::path::Path;
-use log::trace;
 use std::io::{ Error, ErrorKind };
+use std::fs::File;
+use log::trace;
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct PythonBackend {
@@ -21,8 +22,8 @@ impl Backend for PythonBackend {
 
     fn run(&self, fname: &Path) -> std::io::Result<()> {
         let interpreter = format!("python{}", self.version.as_ref().unwrap_or(&String::new()));
-        let stdio = match self.try_guess_test(fname) {
-            Some(test_file) => Stdio::from(std::fs::File::open(test_file)?),
+        let stdio = match self.try_guess_test_file(fname) {
+            Some(test_file) => Stdio::from(File::open(test_file)?),
             None => Stdio::piped()
         };
         let timer = std::time::SystemTime::now();
