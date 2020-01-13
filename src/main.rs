@@ -1,4 +1,4 @@
-use clap::{AppSettings};
+use clap::AppSettings;
 use structopt::StructOpt;
 use env_logger;
 use log::{ trace, error };
@@ -53,15 +53,15 @@ fn main() {
 
     trace!("{:#?}", config);
 
-    let (action, result) =
-    if src_path.exists() {
-        ("run", config.run(&src_path))
-    } else {
-        ("make", config.make(&src_path))
-    };
+    let result =
+        if src_path.exists() {
+            config.run(&src_path)
+        } else {
+            config.make(&src_path)
+        };
 
     match result {
-        Ok(_) => trace!("ok {}", action),
+        Ok(_) => trace!("ok"),
         Err(err) => error!("{}", err)
     }
 }

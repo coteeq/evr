@@ -8,6 +8,7 @@ pub use clang::ClangBackend;
 
 pub trait Backend {
     fn get_template(&self) -> Option<&str>;
+
     fn run(&self, fname: &Path) -> std::io::Result<()>;
 
     fn try_guess_test(&self, fname: &Path) -> Option<PathBuf> {

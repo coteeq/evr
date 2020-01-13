@@ -1,4 +1,4 @@
-use serde_derive::{Serialize, Deserialize};
+use serde_derive::{ Serialize, Deserialize };
 use std::path::{ PathBuf, Path };
 use toml::de;
 use log::{ error, trace };
@@ -57,13 +57,7 @@ impl Conf {
         trace!("Written some bytes to {}", fname.to_string_lossy());
         Ok(())
     }
-
-    #[allow(unused)]
-    pub fn get_compiler_args(&self) -> String {
-        "somedef".to_string()
-    }
 }
-
 
 
 pub fn get_conf() -> Conf {
@@ -89,7 +83,6 @@ pub fn get_conf_maybe() -> Result<Conf, Error> {
         }
 
         if !current.pop() {
-            error!("Not a evr subtree.");
             return Err(Error::new(ErrorKind::NotFound, "Not a evr subtree"));
         }
     };
@@ -98,13 +91,10 @@ pub fn get_conf_maybe() -> Result<Conf, Error> {
 
     let buf_result: Result<Conf, de::Error> = de::from_str(&raw_buf);
 
-    match buf_result {
-        Ok(mut buf) => {
+    buf_result
+        .map(|mut buf| {
             buf.path = Some(path.clone());
-            Ok(buf)
-        },
-        Err(err) => {
-            Err(Error::new(ErrorKind::InvalidData, err))
-        }
-    }
+            buf
+        })
+        .map_err(|err| Error::new(ErrorKind::InvalidData, err))
 }
