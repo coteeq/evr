@@ -54,13 +54,31 @@ impl Backend for PythonBackend {
             .stdin(stdio)
             .spawn()?;
 
-        let status = child.wait()?;
-        if !status.success() {
-            return Err(Error::new(ErrorKind::Other,
-                "Process exited with non-zero exit code"));
+        let timeout = std::time::Duration::from_secs_f32(self.timeout.unwrap_or(1.0));
+        match child.wait_timeout(timeout) {
+            Ok(maybe_status) => match maybe_status {
+                Some(status) => {
+                    trace!("elapsed: {:#?}", timer.elapsed());
+                    if !status.success() {
+                        return Err(Error::new(ErrorKind::Other,
+                            "process exited with non-zero exit code"));
+                    }
+                    Ok(())
+                },
+                None => {
+                    warn!("timed out: {:#?}", timer.elapsed());
+                    child.kill()?;
+                    child.wait()?;
+                    Err(Error::new(ErrorKind::TimedOut,
+                        "process timed out"))
+                }
+            },
+            Err(err) => {
+                error!("could not wait for child: {}", err);
+                child.kill()?;
+                child.wait()?; // Wait defunct
+                Err(err)
+            }
         }
-        trace!("elapsed: {:#?}", timer.elapsed());
-
-        Ok(())
     }
 }
