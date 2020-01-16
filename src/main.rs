@@ -23,14 +23,6 @@ struct EVROpts {
     #[structopt(long, index = 1)]
     src: String,
 
-    /// be quiet
-    #[structopt(short, long)]
-    quiet: bool,
-
-    /// optimize with this level
-    #[structopt(short, long)]
-    opt: Option<u8>,
-
     /// show time (wall)
     #[structopt(short, long)]
     time: bool,
@@ -42,18 +34,12 @@ struct EVROpts {
 
 fn main() {
     let opts = EVROpts::from_args();
-    if !opts.quiet {
-        env_logger::builder()
-            .format_timestamp(None)
-            .init();
-    }
-
-    trace!("{:#?}", opts);
+    env_logger::builder()
+        .format_timestamp(None)
+        .init();
 
     let src_path: std::path::PathBuf = opts.src.into();
     let config = conf::get_conf();
-
-    trace!("{:#?}", config);
 
     let result =
         if src_path.exists() {
