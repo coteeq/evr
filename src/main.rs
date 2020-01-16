@@ -1,3 +1,5 @@
+extern crate lazy_static;
+
 use clap::AppSettings;
 use structopt::StructOpt;
 use env_logger;
