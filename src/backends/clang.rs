@@ -53,9 +53,13 @@ impl ClangBackend {
                 .arg(fname.as_os_str())
                 .arg("-o").arg(&binary_fname)
                 .arg("-lstdc++")
-                .status();
+                .status()?;
             
             trace!("{:#?}", clang_status);
+            if !clang_status.success() {
+                return Err(std::io::Error::new(std::io::ErrorKind::Other,
+                    "could not compile"));
+            }
         }
 
         Ok(binary_fname)
