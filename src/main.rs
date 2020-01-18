@@ -1,44 +1,41 @@
 extern crate lazy_static;
 
-use clap::AppSettings;
-use structopt::StructOpt;
+use clap::{ AppSettings, App, Arg };
 use env_logger;
 use log::{ trace, error };
 
 mod conf;
 mod backends;
 
-#[derive(StructOpt, Debug)]
-#[structopt(
-    name = "evr",
-    version = "0.1",
-    author = "by syn",
-    global_settings = &[
-        AppSettings::ColoredHelp,
-        AppSettings::UnifiedHelpMessage
-    ],
-)]
-struct EVROpts {
-    /// source filename
-    #[structopt(long, index = 1)]
-    src: String,
-
-    /// show time (wall)
-    #[structopt(short, long)]
-    time: bool,
-    
-    /// show mem usage (rss)
-    #[structopt(short, long)]
-    mem: bool
-}
-
 fn main() {
-    let opts = EVROpts::from_args();
+    let matches = App::new("evr")
+        .version("0.1")
+        .author("syn")
+        .setting(AppSettings::ColoredHelp)
+        .setting(AppSettings::UnifiedHelpMessage)
+        .arg(Arg::with_name("src")
+            .required(true)
+            .index(1)
+            .help("source file")
+        )
+        .arg(Arg::with_name("time")
+            .short("t")
+            .long("time")
+            .help("show wall time")
+        )
+        .arg(Arg::with_name("mem")
+            .short("m")
+            .long("mem")
+            .help("show mem usage (rss)")
+        )
+        .get_matches();
+
+
     env_logger::builder()
         .format_timestamp(None)
         .init();
 
-    let src_path: std::path::PathBuf = opts.src.into();
+    let src_path: std::path::PathBuf = matches.value_of("src").expect("src is required").into();
     let config = conf::get_conf();
 
     let result =
