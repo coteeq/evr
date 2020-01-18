@@ -36,8 +36,11 @@ impl Backend for PythonBackend {
 
     fn run(&self, fname: &Path) -> std::io::Result<RunStatus> {
         let stdio = match self.try_guess_test_file(fname) {
-            Some(test_filename) => match File::open(test_filename) {
-                Ok(test_content) => Stdio::from(test_content),
+            Some(test_filename) => match File::open(&test_filename) {
+                Ok(test_content) => {
+                    println!("Using {}", test_filename.as_path().display());
+                    Stdio::from(test_content)
+                },
                 Err(err) => {
                     warn!("Could not open test file. Fallback to piped: {}", err);
                     Stdio::piped()
