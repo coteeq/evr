@@ -1,9 +1,8 @@
 use serde_derive::{ Serialize, Deserialize };
 use crate::backends::{ Backend, RunStatus };
-use std::process::{ Command, Stdio };
+use std::process::{ Command };
 use std::path::Path;
-use std::fs::File;
-use log::{ warn, error };
+use log::error;
 use wait_timeout::ChildExt;
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -35,25 +34,11 @@ impl Backend for PythonBackend {
     }
 
     fn run(&self, fname: &Path) -> std::io::Result<RunStatus> {
-        let stdio = match self.try_guess_test_file(fname) {
-            Some(test_filename) => match File::open(&test_filename) {
-                Ok(test_content) => {
-                    println!("Using {}", test_filename.as_path().display());
-                    Stdio::from(test_content)
-                },
-                Err(err) => {
-                    warn!("Could not open test file. Fallback to piped: {}", err);
-                    Stdio::piped()
-                }
-            },
-            None => Stdio::piped()
-        };
-
         let timer = std::time::SystemTime::now();
 
         let mut child = Command::new(self.get_interpreter())
             .arg(fname.as_os_str())
-            .stdin(stdio)
+            .stdin(self.get_stdin(fname))
             .spawn()?;
 
         let timeout = std::time::Duration::from_secs_f32(self.timeout.unwrap_or(1.0));

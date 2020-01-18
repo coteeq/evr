@@ -78,7 +78,10 @@ impl Backend for ClangBackend {
     fn run(&self, fname: &Path) -> Result<RunStatus> {
         let binary_fname = self.build(fname)?;
 
-        let binary_proc = Command::new(&binary_fname).spawn()?;
+        let binary_proc = Command::new(&binary_fname)
+            .stdin(self.get_stdin(fname))
+            .spawn()?;
+
         get_status(binary_proc)
     }
 }
