@@ -2,6 +2,7 @@ use std::path::{ Path, PathBuf };
 use std::env::temp_dir;
 use lazy_static::lazy_static;
 use std::io::{ Error, ErrorKind, Result };
+use nix::sys::signal::Signal as NixSignal;
 
 pub mod python;
 pub mod clang;
@@ -13,10 +14,17 @@ lazy_static! {
     static ref EVR_TMP_DIR: PathBuf = temp_dir().join("evr-tmp");
 }
 
+pub enum RunStatus {
+    Success,
+    ErrorCode(i32),
+    TimedOut(std::time::Duration),
+    Signal(NixSignal, bool),
+}
+
 pub trait Backend {
     fn get_template(&self) -> Option<&str>;
 
-    fn run(&self, fname: &Path) -> Result<()>;
+    fn run(&self, fname: &Path) -> Result<RunStatus>;
 
     fn try_guess_test_file(&self, fname: &Path) -> Option<PathBuf> {
         let maybe_test = fname.with_extension("txt");

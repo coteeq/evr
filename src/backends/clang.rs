@@ -1,4 +1,5 @@
 use serde_derive::{ Serialize, Deserialize };
+use crate::backends::{ Backend, mk_tmp_dir, RunStatus };
 use std::path::{ Path, PathBuf };
 use std::io::{ Result, Error, ErrorKind };
 use std::process::Command;
@@ -6,7 +7,6 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use log::trace;
 
-type Result<T> = std::io::Result<T>;
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ClangBackend {
@@ -75,14 +75,46 @@ impl Backend for ClangBackend {
         }
     }
 
-    fn run(&self, fname: &Path) -> std::io::Result<()> {
+    fn run(&self, fname: &Path) -> Result<RunStatus> {
         let binary_fname = self.build(fname)?;
 
-        Command::new(&binary_fname)
-            .status()
-            .map(|status| {
-                trace!("{:#?}", status);
-                ()
-            })
+        let binary_proc = Command::new(&binary_fname).spawn()?;
+        get_status(binary_proc)
     }
+}
+
+use nix::sys::wait;
+
+#[cfg(unix)]
+fn get_status(proc: std::process::Child) -> Result<RunStatus> {
+    let id = proc.id() as i32; // for fuck sake, why this emits u32?
+
+    loop {
+        let status_result = wait::waitpid(Some(nix::unistd::Pid::from_raw(id)), None)
+            .map_err(|err| Error::new(ErrorKind::Other, err));
+    
+        let status = status_result?;
+        match status {
+            wait::WaitStatus::Exited(pid, code) => {
+                assert_eq!(pid.as_raw(), id);
+
+                if code == 0 {
+                    return Ok(RunStatus::Success);
+                } else {
+                    return Ok(RunStatus::ErrorCode(code));
+                }
+            },
+            wait::WaitStatus::Signaled(pid, sig, coredump) => {
+                assert_eq!(pid.as_raw(), id);
+
+                return Ok(RunStatus::Signal(sig, coredump));
+            }
+            _ => continue,
+        }
+    }
+}
+
+#[cfg(not(unix))]
+fn get_status(proc: std::process::Child) -> Result<RunStatus> {
+    compile_error!("currently only unix supported");
 }

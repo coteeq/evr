@@ -1,10 +1,9 @@
 use serde_derive::{ Serialize, Deserialize };
-use crate::backends::Backend;
+use crate::backends::{ Backend, RunStatus };
 use std::process::{ Command, Stdio };
 use std::path::Path;
-use std::io::{ Error, ErrorKind };
 use std::fs::File;
-use log::{ trace, warn, error };
+use log::{ warn, error };
 use wait_timeout::ChildExt;
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -35,7 +34,7 @@ impl Backend for PythonBackend {
         }
     }
 
-    fn run(&self, fname: &Path) -> std::io::Result<()> {
+    fn run(&self, fname: &Path) -> std::io::Result<RunStatus> {
         let stdio = match self.try_guess_test_file(fname) {
             Some(test_filename) => match File::open(test_filename) {
                 Ok(test_content) => Stdio::from(test_content),
@@ -58,19 +57,16 @@ impl Backend for PythonBackend {
         match child.wait_timeout(timeout) {
             Ok(maybe_status) => match maybe_status {
                 Some(status) => {
-                    trace!("elapsed: {:#?}", timer.elapsed());
                     if !status.success() {
-                        return Err(Error::new(ErrorKind::Other,
-                            "process exited with non-zero exit code"));
+                        return Ok(RunStatus::ErrorCode(status.code().unwrap_or(0)));
                     }
-                    Ok(())
+                    Ok(RunStatus::Success)
                 },
                 None => {
-                    warn!("timed out: {:#?}", timer.elapsed());
+                    let elapsed = timer.elapsed().unwrap_or(Default::default());
                     child.kill()?;
                     child.wait()?;
-                    Err(Error::new(ErrorKind::TimedOut,
-                        "process timed out"))
+                    Ok(RunStatus::TimedOut(elapsed))
                 }
             },
             Err(err) => {

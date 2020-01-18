@@ -7,7 +7,7 @@ use std::io::prelude::*;
 type Error = std::io::Error;
 use std::io::ErrorKind;
 
-use crate::backends::{ Backend, PythonBackend, ClangBackend };
+use crate::backends::{ Backend, PythonBackend, ClangBackend, RunStatus };
 
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -43,9 +43,20 @@ impl Conf {
     }
 
     pub fn run(&self, fname: &Path) -> std::io::Result<()> {
-        self.get_backend(fname)
-            .and_then(|backend| Some(backend.run(fname)))
-            .unwrap_or(Err(Error::new(ErrorKind::InvalidData, "Backend not found")))
+        match self.get_backend(fname) {
+            Some(backend) => backend.run(fname).map(|status| {
+                match status {
+                    RunStatus::Success => {},
+                    RunStatus::ErrorCode(code) =>
+                        { error!("process exited with code: {}", code); },
+                    RunStatus::TimedOut(duration) =>
+                        { error!("process timed out at {:.3}s", duration.as_secs_f32()); }
+                    RunStatus::Signal(sig, coredump) =>
+                        { error!("process killed by {} {}", sig, if coredump { "(core dumped)" } else { "" }); }
+                };
+            }),
+            None => Err(Error::new(ErrorKind::InvalidData, "Backend not found"))
+        }
     }
 
     pub fn make(&self, fname: &Path) -> std::io::Result<()> {
