@@ -1,6 +1,6 @@
 use serde_derive::{ Serialize, Deserialize };
-use crate::backends::{ Backend, mk_tmp_dir };
-use std::path::Path;
+use std::path::{ Path, PathBuf };
+use std::io::{ Result, Error, ErrorKind };
 use std::process::Command;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -25,7 +25,7 @@ fn default_cc() -> String {
 }
 
 
-fn get_binary_by_filename(fname: &Path) -> Result<std::path::PathBuf> {
+fn get_binary_by_filename(fname: &Path) -> Result<PathBuf> {
     let hashed_fname = {
         let mut hasher = DefaultHasher::new();
         fname.hash(&mut hasher);
@@ -37,7 +37,7 @@ fn get_binary_by_filename(fname: &Path) -> Result<std::path::PathBuf> {
 
 
 impl ClangBackend {
-    fn build(&self, fname: &Path) -> Result<std::path::PathBuf> {
+    fn build(&self, fname: &Path) -> Result<PathBuf> {
         let binary_fname = get_binary_by_filename(fname)?;
         let get_mtime = |file| {
             std::fs::metadata(file)?
@@ -57,7 +57,7 @@ impl ClangBackend {
             
             trace!("{:#?}", clang_status);
             if !clang_status.success() {
-                return Err(std::io::Error::new(std::io::ErrorKind::Other,
+                return Err(Error::new(ErrorKind::Other,
                     "could not compile"));
             }
         }
