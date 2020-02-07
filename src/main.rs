@@ -35,7 +35,9 @@ fn main() {
         .format_timestamp(None)
         .init();
 
-    let src_path: std::path::PathBuf = matches.value_of("src").expect("src is required").into();
+    let src_path: std::path::PathBuf = matches.value_of("src")
+                                              .expect("src is required")
+                                              .into();
     let config = conf::get_conf();
 
     let result =
