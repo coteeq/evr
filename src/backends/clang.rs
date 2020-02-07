@@ -5,6 +5,7 @@ use std::io::{ Result, Error, ErrorKind };
 use std::process::{ Command };
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{ Hash, Hasher };
+use nix::{ sys::wait, unistd::Pid };
 
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -82,21 +83,20 @@ impl Backend for ClangBackend {
     }
 }
 
-use nix::sys::wait;
     
 #[cfg(unix)]
 fn get_status(proc: std::process::Child) -> Result<RunStatus> {
-    let id = proc.id() as i32; // for fuck sake, why this emits u32?
+    let pid = Pid::from_raw(proc.id() as i32);
 
     loop {
-        let status_result = wait::waitpid(Some(nix::unistd::Pid::from_raw(id)), None)
+        let status_result = wait::waitpid(Some(pid), None)
             .map_err(|err| Error::new(ErrorKind::Other, err));
     
         let status = status_result?;
 
         match status {
-            wait::WaitStatus::Exited(pid, code) => {
-                assert_eq!(pid.as_raw(), id);
+            wait::WaitStatus::Exited(ret_pid, code) => {
+                assert_eq!(ret_pid, pid);
 
                 if code == 0 {
                     return Ok(RunStatus::Success);
@@ -104,8 +104,8 @@ fn get_status(proc: std::process::Child) -> Result<RunStatus> {
                     return Ok(RunStatus::ErrorCode(code));
                 }
             },
-            wait::WaitStatus::Signaled(pid, sig, coredump) => {
-                assert_eq!(pid.as_raw(), id);
+            wait::WaitStatus::Signaled(ret_pid, sig, coredump) => {
+                assert_eq!(ret_pid, pid);
 
                 return Ok(RunStatus::Signal(sig, coredump));
             }
