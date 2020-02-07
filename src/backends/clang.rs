@@ -108,7 +108,7 @@ fn get_status(proc: std::process::Child) -> Result<RunStatus> {
                 assert_eq!(ret_pid, pid);
 
                 return Ok(RunStatus::Signal(sig, coredump));
-            }
+            },
             _ => continue,
         }
     }
