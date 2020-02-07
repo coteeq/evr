@@ -2,10 +2,9 @@ use serde_derive::{ Serialize, Deserialize };
 use crate::backends::{ Backend, mk_tmp_dir, RunStatus };
 use std::path::{ Path, PathBuf };
 use std::io::{ Result, Error, ErrorKind };
-use std::process::Command;
+use std::process::{ Command };
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use log::trace;
 
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -48,14 +47,12 @@ impl ClangBackend {
 
         if src_mod.is_err() || binary_mod.is_err() || src_mod.unwrap() > binary_mod.unwrap() {
             let clang_status = Command::new(&self.cc)
-                .args(&self.args)
                 .arg("-x").arg("c++")
                 .arg(fname.as_os_str())
                 .arg("-o").arg(&binary_fname)
-                .arg("-lstdc++")
+                .args(&self.args)
                 .status()?;
-            
-            trace!("{:#?}", clang_status);
+
             if !clang_status.success() {
                 return Err(Error::new(ErrorKind::Other,
                     "could not compile"));
@@ -79,7 +76,6 @@ impl Backend for ClangBackend {
         let binary_fname = self.build(fname)?;
 
         let binary_proc = Command::new(&binary_fname)
-            .stdin(self.get_stdin(fname))
             .spawn()?;
 
         get_status(binary_proc)
@@ -87,7 +83,7 @@ impl Backend for ClangBackend {
 }
 
 use nix::sys::wait;
-
+    
 #[cfg(unix)]
 fn get_status(proc: std::process::Child) -> Result<RunStatus> {
     let id = proc.id() as i32; // for fuck sake, why this emits u32?
@@ -97,6 +93,7 @@ fn get_status(proc: std::process::Child) -> Result<RunStatus> {
             .map_err(|err| Error::new(ErrorKind::Other, err));
     
         let status = status_result?;
+
         match status {
             wait::WaitStatus::Exited(pid, code) => {
                 assert_eq!(pid.as_raw(), id);

@@ -38,7 +38,6 @@ impl Backend for PythonBackend {
 
         let mut child = Command::new(self.get_interpreter())
             .arg(fname.as_os_str())
-            .stdin(self.get_stdin(fname))
             .spawn()?;
 
         let timeout = std::time::Duration::from_secs_f32(self.timeout.unwrap_or(1.0));
