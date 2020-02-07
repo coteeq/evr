@@ -4,7 +4,7 @@ use std::path::{ Path, PathBuf };
 use std::io::{ Result, Error, ErrorKind };
 use std::process::{ Command };
 use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
+use std::hash::{ Hash, Hasher };
 
 
 #[derive(Debug, Serialize, Deserialize, Default)]
