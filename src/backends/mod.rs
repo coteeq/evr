@@ -1,8 +1,8 @@
 use std::path::{ Path, PathBuf };
 use std::env::temp_dir;
 use lazy_static::lazy_static;
-use std::io::{ Error, ErrorKind, Result };
-use nix::sys::signal::Signal as NixSignal;
+use std::io::{ Error, ErrorKind };
+use crate::wait::{ WaitInfo };
 
 pub mod python;
 pub mod clang;
@@ -10,24 +10,21 @@ pub mod clang;
 pub use python::PythonBackend;
 pub use clang::ClangBackend;
 
+pub mod run_error;
+pub use run_error::RunError;
+
+
 lazy_static! {
     static ref EVR_TMP_DIR: PathBuf = temp_dir().join("evr-tmp");
-}
-
-pub enum RunStatus {
-    Success,
-    ErrorCode(i32),
-    TimedOut(std::time::Duration),
-    Signal(NixSignal, bool),
 }
 
 pub trait Backend {
     fn get_template(&self) -> Option<&str>;
 
-    fn run(&self, fname: &Path) -> Result<RunStatus>;
+    fn run(&self, fname: &Path) -> Result<WaitInfo, RunError>;
 }
 
-fn mk_tmp_dir() -> Result<&'static std::path::PathBuf> {
+fn mk_tmp_dir() -> std::io::Result<&'static std::path::PathBuf> {
     if !EVR_TMP_DIR.exists() {
         std::fs::create_dir(&*EVR_TMP_DIR)?;
     } else {

@@ -2,10 +2,11 @@ extern crate lazy_static;
 
 use clap::{ AppSettings, App, Arg };
 use env_logger;
-use log::{ trace, error };
+use log::{ error };
 
 mod conf;
 mod backends;
+mod wait;
 
 fn main() {
     let matches = App::new("evr")
@@ -42,13 +43,17 @@ fn main() {
 
     let result =
         if src_path.exists() {
-            config.run(&src_path)
+            config.run(
+                &src_path,
+                matches.is_present("time"),
+                matches.is_present("mem")
+            )
         } else {
             config.make(&src_path)
         };
 
     match result {
-        Ok(_) => trace!("ok"),
+        Ok(_) => {},
         Err(err) => error!("{}", err)
     }
 }

@@ -1,11 +1,12 @@
 use serde_derive::{ Serialize, Deserialize };
-use crate::backends::{ Backend, mk_tmp_dir, RunStatus };
+use crate::backends::{ Backend, mk_tmp_dir, RunError };
 use std::path::{ Path, PathBuf };
-use std::io::{ Result, Error, ErrorKind };
+use std::io::{ Result as IoResult, Error, ErrorKind };
 use std::process::{ Command };
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{ Hash, Hasher };
-use nix::{ sys::wait, unistd::Pid };
+use crate::wait::{ WaitInfo, wait_child };
+use std::time::Duration;
 
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -17,6 +18,9 @@ pub struct ClangBackend {
 
     #[serde(default = "default_cc")]
     cc: String,
+
+    #[serde(default = "default_timeout")]
+    timeout: Duration
 }
 
 
@@ -24,8 +28,12 @@ fn default_cc() -> String {
     "clang++".to_string()
 }
 
+fn default_timeout() -> Duration {
+    Duration::from_secs(1)
+}
 
-fn get_binary_by_filename(fname: &Path) -> Result<PathBuf> {
+
+fn get_binary_by_filename(fname: &Path) -> IoResult<PathBuf> {
     let hashed_fname = {
         let mut hasher = DefaultHasher::new();
         fname.hash(&mut hasher);
@@ -37,7 +45,7 @@ fn get_binary_by_filename(fname: &Path) -> Result<PathBuf> {
 
 
 impl ClangBackend {
-    fn build(&self, fname: &Path) -> Result<PathBuf> {
+    fn build(&self, fname: &Path) -> IoResult<PathBuf> {
         let binary_fname = get_binary_by_filename(fname)?;
         let get_mtime = |file| {
             std::fs::metadata(file)?
@@ -73,48 +81,12 @@ impl Backend for ClangBackend {
         }
     }
 
-    fn run(&self, fname: &Path) -> Result<RunStatus> {
+    fn run(&self, fname: &Path) -> Result<WaitInfo, RunError> {
         let binary_fname = self.build(fname)?;
 
-        let binary_proc = Command::new(&binary_fname)
+        let proc = Command::new(&binary_fname)
             .spawn()?;
 
-        get_status(binary_proc)
+        Ok(wait_child(proc, self.timeout, std::time::Instant::now())?)
     }
-}
-
-    
-#[cfg(unix)]
-fn get_status(proc: std::process::Child) -> Result<RunStatus> {
-    let pid = Pid::from_raw(proc.id() as i32);
-
-    loop {
-        let status_result = wait::waitpid(Some(pid), None)
-            .map_err(|err| Error::new(ErrorKind::Other, err));
-    
-        let status = status_result?;
-
-        match status {
-            wait::WaitStatus::Exited(ret_pid, code) => {
-                assert_eq!(ret_pid, pid);
-
-                if code == 0 {
-                    return Ok(RunStatus::Success);
-                } else {
-                    return Ok(RunStatus::ErrorCode(code));
-                }
-            },
-            wait::WaitStatus::Signaled(ret_pid, sig, coredump) => {
-                assert_eq!(ret_pid, pid);
-
-                return Ok(RunStatus::Signal(sig, coredump));
-            },
-            _ => continue,
-        }
-    }
-}
-
-#[cfg(not(unix))]
-fn get_status(proc: std::process::Child) -> Result<RunStatus> {
-    compile_error!("currently only unix supported");
 }

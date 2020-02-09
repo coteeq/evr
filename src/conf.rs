@@ -3,11 +3,12 @@ use std::path::{ PathBuf, Path };
 use toml::de;
 use log::{ error, trace };
 use std::io::prelude::*;
+use nix::sys::wait::WaitStatus;
 
 type Error = std::io::Error;
 use std::io::ErrorKind;
 
-use crate::backends::{ Backend, PythonBackend, ClangBackend, RunStatus };
+use crate::backends::{ Backend, PythonBackend, ClangBackend, RunError };
 
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -42,24 +43,42 @@ impl Conf {
         }
     }
 
-    pub fn run(&self, fname: &Path) -> std::io::Result<()> {
+    pub fn run(
+        &self,
+        fname: &Path,
+        show_time: bool,
+        show_mem: bool
+    ) -> Result<(), RunError> {
         match self.get_backend(fname) {
-            Some(backend) => backend.run(fname).map(|status| {
-                match status {
-                    RunStatus::Success => {},
-                    RunStatus::ErrorCode(code) =>
-                        { error!("process exited with code: {}", code); },
-                    RunStatus::TimedOut(duration) =>
-                        { error!("process timed out at {:.3}s", duration.as_secs_f32()); }
-                    RunStatus::Signal(sig, coredump) =>
-                        { error!("process killed by {} {}", sig, if coredump { "(core dumped)" } else { "" }); }
-                };
+            Some(backend) => backend.run(fname).map(|info| {
+                match info.status {
+                    WaitStatus::Exited(_pid, ret) => match ret {
+                        0 => {
+                            if show_time {
+                                println!("wall time: {:?}", info.wall_time);
+                            }
+                            if show_mem {
+                                println!("rss: {}K", info.usage.ru_maxrss);
+                            }
+                        },
+                        _ => error!("process exited with {}", ret)
+                    },
+                    WaitStatus::Signaled(pid, sig, coredump) => {
+                        error!(
+                            "process killed by {} {}. was {}",
+                            sig,
+                            if coredump {"(core dumped)"} else {""},
+                            pid
+                        );
+                    },
+                    _ => error!("process signaled, but not exited")
+                }
             }),
-            None => Err(Error::new(ErrorKind::InvalidData, "Backend not found"))
+            None => Err(Error::new(ErrorKind::InvalidData, "Backend not found").into())
         }
     }
 
-    pub fn make(&self, fname: &Path) -> std::io::Result<()> {
+    pub fn make(&self, fname: &Path) -> Result<(), RunError> {
         trace!("Template: {:?}", self.get_template(&fname));
 
         std::fs::File::create(fname)?
