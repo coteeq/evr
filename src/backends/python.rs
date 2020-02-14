@@ -1,14 +1,23 @@
-use serde_derive::{ Serialize, Deserialize };
+use serde_derive::Deserialize;
 use crate::backends::{ Backend, RunError };
 use std::process::{ Command };
 use std::path::Path;
 use crate::wait::{ wait_child, ChildExitStatus };
+use crate::serde_duration::deserialize_duration;
+use std::time::Duration;
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default)]
 pub struct PythonBackend {
     template: Option<String>,
     version: Option<String>,
-    timeout: Option<f32>,
+
+    #[serde(default = "default_timeout", deserialize_with = "deserialize_duration")]
+    timeout: Duration,
+}
+
+
+fn default_timeout() -> Duration {
+    Duration::from_secs(1)
 }
 
 
@@ -39,7 +48,6 @@ impl Backend for PythonBackend {
             .arg(fname.as_os_str())
             .spawn()?;
 
-        let timeout = std::time::Duration::from_secs_f32(self.timeout.unwrap_or(1.0));
-        Ok(wait_child(child, timeout, timer)?)
+        Ok(wait_child(child, self.timeout, timer)?)
     }
 }

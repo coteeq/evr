@@ -1,4 +1,4 @@
-use serde_derive::{ Serialize, Deserialize };
+use serde_derive::Deserialize;
 use crate::backends::{ Backend, mk_tmp_dir, RunError };
 use std::path::{ Path, PathBuf };
 use std::io::{ Result as IoResult, Error, ErrorKind };
@@ -7,9 +7,10 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{ Hash, Hasher };
 use crate::wait::{ ChildExitStatus, wait_child };
 use std::time::Duration;
+use crate::serde_duration::deserialize_duration;
 
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default)]
 pub struct ClangBackend {
     template: Option<String>,
 
@@ -19,7 +20,7 @@ pub struct ClangBackend {
     #[serde(default = "default_cc")]
     cc: String,
 
-    #[serde(default = "default_timeout")]
+    #[serde(default = "default_timeout", deserialize_with = "deserialize_duration")]
     timeout: Duration
 }
 

@@ -8,6 +8,7 @@ use std::io::prelude::*;
 mod conf;
 mod backends;
 mod wait;
+mod serde_duration;
 
 fn main() {
     let matches = App::new("evr")

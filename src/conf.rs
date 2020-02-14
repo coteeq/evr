@@ -1,4 +1,4 @@
-use serde_derive::{ Serialize, Deserialize };
+use serde_derive::Deserialize;
 use std::path::{ PathBuf, Path };
 use toml::de;
 use log::{ error };
@@ -9,7 +9,7 @@ use std::io::ErrorKind;
 use crate::backends::{ Backend, PythonBackend, ClangBackend };
 
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default)]
 pub struct Conf {
     #[serde(skip)]
     path: Option<PathBuf>,
