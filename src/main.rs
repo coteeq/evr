@@ -47,11 +47,12 @@ fn main() {
         if let Some(backend) = config.get_backend(&src_path) {
             match backend.run(&src_path) {
                 Ok(status) => {
+                    // print to stderr to allow `>/dev/null` for user programs
                     if matches.is_present("time") {
-                        println!("wall time: {:?}", status.wall_time);
+                        eprintln!("wall time: {:?}", status.wall_time);
                     }
                     if matches.is_present("mem") {
-                        println!("rss: {}K", status.usage.ru_maxrss);
+                        eprintln!("rss: {}K", status.usage.ru_maxrss);
                     }
                 },
                 Err(err) => error!("{}", err)
