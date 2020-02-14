@@ -5,7 +5,7 @@ use std::io::{ Result as IoResult, Error, ErrorKind };
 use std::process::{ Command };
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{ Hash, Hasher };
-use crate::wait::{ WaitInfo, wait_child };
+use crate::wait::{ ChildExitStatus, wait_child };
 use std::time::Duration;
 
 
@@ -81,7 +81,7 @@ impl Backend for ClangBackend {
         }
     }
 
-    fn run(&self, fname: &Path) -> Result<WaitInfo, RunError> {
+    fn run(&self, fname: &Path) -> Result<ChildExitStatus, RunError> {
         let binary_fname = self.build(fname)?;
 
         let proc = Command::new(&binary_fname)

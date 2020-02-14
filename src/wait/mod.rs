@@ -8,18 +8,43 @@ use std::time::{ Instant, Duration };
 use std::process::Child;
 use std::thread;
 use std::sync::mpsc;
+use std::convert::{ TryFrom, TryInto };
 
 mod error;
 mod rusage_ffi;
 pub use rusage_ffi::Rusage;
 
 pub use error::WaitError;
+use error::ProcessSignalInfo;
 
 #[derive(Debug)]
-pub struct WaitInfo {
+struct WaitInfo {
     pub status: WaitStatus,
     pub usage: Rusage,
     pub wall_time: Duration
+}
+
+#[derive(Debug)]
+pub struct ChildExitStatus {
+    pub usage: Rusage,
+    pub wall_time: Duration
+}
+
+impl TryFrom<WaitInfo> for ChildExitStatus {
+    type Error = WaitError;
+
+    fn try_from(info: WaitInfo) -> Result<Self, Self::Error> {
+        match info.status {
+            WaitStatus::Exited(pid, ret) =>
+                match ret {
+                    0 => Ok(ChildExitStatus { usage: info.usage, wall_time: info.wall_time }),
+                    _ => Err(WaitError::ReturnNonZero(ret, pid))
+                },
+            WaitStatus::Signaled(pid, signal, coredump) =>
+                Err(WaitError::Signaled(ProcessSignalInfo { pid, signal, coredump })),
+            _ => Err(WaitError::NotExited)
+        }
+    }
 }
 
 
@@ -57,14 +82,14 @@ pub fn wait_child(
     mut child: Child,
     timeout: Duration,
     timer: Instant
-) -> Result<WaitInfo, WaitError> {
+) -> Result<ChildExitStatus, WaitError> {
     let pid = Pid::from_raw(child.id() as i32);
     let (send, recv) = mpsc::channel();
 
     let thr = thread::spawn(move || wait4_pid(pid, send, timer));
 
     match recv.recv_timeout(timeout) {
-        Ok(Ok(usg)) => Ok(usg),
+        Ok(Ok(wait_info)) => wait_info.try_into(),
         Ok(Err(err)) => Err(err.into()),
         Err(mpsc::RecvTimeoutError::Timeout) => {
             drop(recv);

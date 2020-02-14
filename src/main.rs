@@ -3,6 +3,7 @@ extern crate lazy_static;
 use clap::{ AppSettings, App, Arg };
 use env_logger;
 use log::{ error };
+use std::io::prelude::*;
 
 mod conf;
 mod backends;
@@ -41,19 +42,28 @@ fn main() {
                                               .into();
     let config = conf::get_conf();
 
-    let result =
-        if src_path.exists() {
-            config.run(
-                &src_path,
-                matches.is_present("time"),
-                matches.is_present("mem")
-            )
+    if src_path.exists() {
+        if let Some(backend) = config.get_backend(&src_path) {
+            match backend.run(&src_path) {
+                Ok(status) => {
+                    if matches.is_present("time") {
+                        println!("wall time: {:?}", status.wall_time);
+                    }
+                    if matches.is_present("mem") {
+                        println!("rss: {}K", status.usage.ru_maxrss);
+                    }
+                },
+                Err(err) => error!("{}", err)
+            };
         } else {
-            config.make(&src_path)
-        };
-
-    match result {
-        Ok(_) => {},
-        Err(err) => error!("{}", err)
-    }
+            error!("could not match backend");
+        }
+    } else {
+        let template = config.get_template(&src_path).as_bytes();
+        if let Err(err) =
+            std::fs::File::create(&src_path)
+                .and_then(|mut file| file.write_all(template)) {
+            error!("{}", err);
+        }
+    };
 }

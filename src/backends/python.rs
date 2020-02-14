@@ -2,7 +2,7 @@ use serde_derive::{ Serialize, Deserialize };
 use crate::backends::{ Backend, RunError };
 use std::process::{ Command };
 use std::path::Path;
-use crate::wait::{ wait_child, WaitInfo };
+use crate::wait::{ wait_child, ChildExitStatus };
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct PythonBackend {
@@ -32,7 +32,7 @@ impl Backend for PythonBackend {
         }
     }
 
-    fn run(&self, fname: &Path) -> Result<WaitInfo, RunError> {
+    fn run(&self, fname: &Path) -> Result<ChildExitStatus, RunError> {
         let timer = std::time::Instant::now();
 
         let child = Command::new(self.get_interpreter())

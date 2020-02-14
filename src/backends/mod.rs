@@ -2,7 +2,7 @@ use std::path::{ Path, PathBuf };
 use std::env::temp_dir;
 use lazy_static::lazy_static;
 use std::io::{ Error, ErrorKind };
-use crate::wait::{ WaitInfo };
+use crate::wait::ChildExitStatus;
 
 pub mod python;
 pub mod clang;
@@ -21,7 +21,7 @@ lazy_static! {
 pub trait Backend {
     fn get_template(&self) -> Option<&str>;
 
-    fn run(&self, fname: &Path) -> Result<WaitInfo, RunError>;
+    fn run(&self, fname: &Path) -> Result<ChildExitStatus, RunError>;
 }
 
 fn mk_tmp_dir() -> std::io::Result<&'static std::path::PathBuf> {
