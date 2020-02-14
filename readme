@@ -1,7 +1,12 @@
-todo: smart time, clang
+(maybe compile) & run some programs
 
-I mean like this is not about useful tool.
-It's more about me learning rust.
-Who the fuck wants this useless shit?
+write template to file
+    $ evr file.cc
+
+compile and run existing file
+    $ evr file.cc
+
+show mem & time usage
+    $ evr -m -t file.cc
 
 WTFPL
