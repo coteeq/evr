@@ -1,7 +1,6 @@
 use serde_derive::Deserialize;
 use std::path::{ PathBuf, Path };
 use toml::de;
-use log::{ error };
 
 type Error = std::io::Error;
 use std::io::ErrorKind;
@@ -9,7 +8,7 @@ use std::io::ErrorKind;
 use crate::backends::{ Backend, PythonBackend, ClangBackend };
 
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize)]
 pub struct Conf {
     #[serde(skip)]
     path: Option<PathBuf>,
@@ -43,21 +42,7 @@ impl Conf {
 }
 
 
-pub fn get_conf() -> Conf {
-    match get_conf_maybe() {
-        Ok(c) => c,
-        Err(e) => {
-            match e.kind() {
-                ErrorKind::InvalidData => error!("parse: {}", e),
-                _ => error!("{}", e)
-            };
-            Default::default()
-        }
-    }
-}
-
-
-pub fn get_conf_maybe() -> Result<Conf, Error> {
+pub fn get_conf() -> Result<Conf, Error> {
     let mut current = std::env::current_dir()?;
     let path = loop {
         let candidate = current.join(".evr");

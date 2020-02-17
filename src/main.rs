@@ -41,7 +41,14 @@ fn main() {
     let src_path: std::path::PathBuf = matches.value_of("src")
                                               .expect("src is required")
                                               .into();
-    let config = conf::get_conf();
+
+    let config = match conf::get_conf() {
+        Ok(c) => c,
+        Err(err) => {
+            error!("could not load config: {}", err);
+            std::process::exit(64); // EX_USAGE (BSD sysexits(3))
+        }
+    };
 
     if src_path.exists() {
         if let Some(backend) = config.get_backend(&src_path) {
