@@ -48,6 +48,21 @@ impl TryFrom<WaitInfo> for ChildExitStatus {
 }
 
 
+#[cfg(target_os = "macos")]
+#[link(name = "c")]
+extern {
+    fn wait4(
+        pid: libc::pid_t, 
+        status: *mut c_int, 
+        options: c_int, 
+        rusage: *mut libc::rusage
+    ) -> libc::pid_t;
+}
+
+#[cfg(target_os = "linux")]
+use libc::wait4;
+
+
 fn wait4_pid(
     pid: Pid,
     chan: mpsc::Sender<std::result::Result<WaitInfo, nix::Error>>,
@@ -59,7 +74,7 @@ fn wait4_pid(
 
     unsafe {
         usg = std::mem::zeroed();
-        wait_ret = libc::wait4(pid.as_raw(), &mut status, 0 as c_int, &mut usg);
+        wait_ret = wait4(pid.as_raw(), &mut status, 0 as c_int, &mut usg);
     }
 
     #[allow(unused_must_use)] {
