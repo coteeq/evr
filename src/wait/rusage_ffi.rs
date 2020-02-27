@@ -51,3 +51,15 @@ impl From<libc::rusage> for Rusage {
         }
     }
 }
+
+impl Rusage {
+    pub fn get_rss_bytes(&self) -> i64 {
+        if cfg!(target_os = "macos") {
+            self.ru_maxrss
+        } else if cfg!(target_os = "linux") {
+            self.ru_maxrss * 1000 // on linux ru_maxrss is in kilobytes
+        } else {
+            unimplemented!();
+        }
+    }
+}

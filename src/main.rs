@@ -59,7 +59,7 @@ fn main() {
                         eprintln!("wall time: {:?}", status.wall_time);
                     }
                     if matches.is_present("mem") {
-                        eprintln!("rss: {}K", status.usage.ru_maxrss);
+                        eprintln!("rss: {}K", status.usage.get_rss_bytes() / 1000);
                     }
                 },
                 Err(err) => error!("{}", err)
