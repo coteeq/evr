@@ -22,8 +22,8 @@ impl From<WaitError> for RunError {
 impl std::fmt::Display for RunError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match &*self {
-            RunError::IoError(e) => e.fmt(f),
-            RunError::WaitError(e) => e.fmt(f)
+            RunError::IoError(e) => write!(f, "I/O error: {}", e),
+            RunError::WaitError(e) => write!(f, "Wait error: {}", e),
         }
     }
 }
