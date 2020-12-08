@@ -12,7 +12,7 @@ mod wait;
 
 fn main() {
     let matches = App::new("evr")
-        .version("0.1")
+        .version(env!("CARGO_PKG_VERSION"))
         .author("syn")
         .setting(AppSettings::ColoredHelp)
         .setting(AppSettings::UnifiedHelpMessage)
