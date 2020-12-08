@@ -5,7 +5,12 @@ use toml::de;
 type Error = std::io::Error;
 use std::io::ErrorKind;
 
-use crate::backends::{ Backend, PythonBackend, ClangBackend };
+use crate::backends::{
+    Backend,
+    PythonBackend,
+    ClangBackend,
+    ClangCBackend,
+};
 
 
 #[derive(Debug, Deserialize)]
@@ -17,7 +22,10 @@ pub struct Conf {
     python: PythonBackend,
 
     #[serde(default)]
-    clang: ClangBackend
+    clang: ClangBackend,
+
+    #[serde(default)]
+    clang_c: ClangCBackend,
 }
 
 
@@ -36,6 +44,7 @@ impl Conf {
         match ext {
             "py" => Some(Box::new(&self.python)),
             "cc" | "cpp" | "cxx" => Some(Box::new(&self.clang)),
+            "c" => Some(Box::new(&self.clang_c)),
             _ => None
         }
     }

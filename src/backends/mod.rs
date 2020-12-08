@@ -6,9 +6,11 @@ use crate::wait::ChildExitStatus;
 
 pub mod python;
 pub mod clang;
+pub mod clang_c;
 
 pub use python::PythonBackend;
 pub use clang::ClangBackend;
+pub use clang_c::ClangCBackend;
 
 pub mod run_error;
 pub use run_error::RunError;
