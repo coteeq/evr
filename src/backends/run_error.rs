@@ -4,7 +4,7 @@ use std::io::Error as IoError;
 #[derive(Debug)]
 pub enum RunError {
     IoError(std::io::Error),
-    WaitError(WaitError)
+    WaitError(WaitError),
 }
 
 impl From<IoError> for RunError {
@@ -32,7 +32,7 @@ impl std::error::Error for RunError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match *self {
             RunError::IoError(ref e) => Some(e),
-            RunError::WaitError(ref e) => Some(e)
+            RunError::WaitError(ref e) => Some(e),
         }
     }
 }

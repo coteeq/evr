@@ -1,14 +1,14 @@
 extern crate lazy_static;
 
-use clap::{ AppSettings, App, Arg };
+use clap::{App, AppSettings, Arg};
 use env_logger;
-use log::{ error };
+use log::error;
 use std::io::prelude::*;
 
-mod conf;
 mod backends;
-mod wait;
+mod conf;
 mod serde_duration;
+mod wait;
 
 fn main() {
     let matches = App::new("evr")
@@ -16,31 +16,29 @@ fn main() {
         .author("syn")
         .setting(AppSettings::ColoredHelp)
         .setting(AppSettings::UnifiedHelpMessage)
-        .arg(Arg::with_name("src")
-            .required(true)
-            .index(1)
-            .help("source file")
+        .arg(
+            Arg::with_name("src")
+                .required(true)
+                .index(1)
+                .help("source file"),
         )
-        .arg(Arg::with_name("time")
-            .short("t")
-            .long("time")
-            .help("show wall time")
+        .arg(
+            Arg::with_name("time")
+                .short("t")
+                .long("time")
+                .help("show wall time"),
         )
-        .arg(Arg::with_name("mem")
-            .short("m")
-            .long("mem")
-            .help("show mem usage (rss)")
+        .arg(
+            Arg::with_name("mem")
+                .short("m")
+                .long("mem")
+                .help("show mem usage (rss)"),
         )
         .get_matches();
 
+    env_logger::builder().format_timestamp(None).init();
 
-    env_logger::builder()
-        .format_timestamp(None)
-        .init();
-
-    let src_path: std::path::PathBuf = matches.value_of("src")
-                                              .expect("src is required")
-                                              .into();
+    let src_path: std::path::PathBuf = matches.value_of("src").expect("src is required").into();
 
     let config = match conf::get_conf() {
         Ok(c) => c,
@@ -61,8 +59,8 @@ fn main() {
                     if matches.is_present("mem") {
                         eprintln!("rss: {}K", status.usage.get_rss_bytes() / 1000);
                     }
-                },
-                Err(err) => error!("{}", err)
+                }
+                Err(err) => error!("{}", err),
             };
         } else {
             error!("could not match backend");
@@ -70,8 +68,8 @@ fn main() {
     } else {
         let template = config.get_template(&src_path).as_bytes();
         if let Err(err) =
-            std::fs::File::create(&src_path)
-                .and_then(|mut file| file.write_all(template)) {
+            std::fs::File::create(&src_path).and_then(|mut file| file.write_all(template))
+        {
             error!("{}", err);
         }
     };

@@ -1,9 +1,9 @@
-use serde_derive::Deserialize;
-use crate::backends::{ Backend, RunError };
-use std::process::{ Command };
-use std::path::Path;
-use crate::wait::{ wait_child, ChildExitStatus };
+use crate::backends::{Backend, RunError};
 use crate::serde_duration::deserialize_duration;
+use crate::wait::{wait_child, ChildExitStatus};
+use serde_derive::Deserialize;
+use std::path::Path;
+use std::process::Command;
 use std::time::Duration;
 
 #[derive(Debug, Deserialize, Default)]
@@ -15,29 +15,21 @@ pub struct PythonBackend {
     timeout: Duration,
 }
 
-
 fn default_timeout() -> Duration {
     Duration::from_secs(1)
 }
 
-
 impl PythonBackend {
     fn get_interpreter(&self) -> String {
-        format!(
-            "python{}",
-            self.version
-                .as_ref()
-                .unwrap_or(&String::new())
-        )
+        format!("python{}", self.version.as_ref().unwrap_or(&String::new()))
     }
 }
-
 
 impl Backend for PythonBackend {
     fn get_template(&self) -> Option<&str> {
         match self.template {
             Some(ref t) => Some(t),
-            None => None
+            None => None,
         }
     }
 

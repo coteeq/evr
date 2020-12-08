@@ -25,10 +25,7 @@ impl From<libc::rusage> for Rusage {
     fn from(usg: libc::rusage) -> Rusage {
         const MICROS_IN_SEC: u64 = 1_000_000;
         let convert_timeval = |tv: libc::timeval| {
-            Duration::from_micros(
-                tv.tv_sec as u64 * MICROS_IN_SEC +
-                tv.tv_usec as u64
-            )
+            Duration::from_micros(tv.tv_sec as u64 * MICROS_IN_SEC + tv.tv_usec as u64)
         };
 
         Rusage {

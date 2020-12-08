@@ -1,17 +1,11 @@
 use serde_derive::Deserialize;
-use std::path::{ PathBuf, Path };
+use std::path::{Path, PathBuf};
 use toml::de;
 
 type Error = std::io::Error;
 use std::io::ErrorKind;
 
-use crate::backends::{
-    Backend,
-    PythonBackend,
-    ClangBackend,
-    ClangCBackend,
-};
-
+use crate::backends::{Backend, ClangBackend, ClangCBackend, PythonBackend};
 
 #[derive(Debug, Deserialize)]
 pub struct Conf {
@@ -28,7 +22,6 @@ pub struct Conf {
     clang_c: ClangCBackend,
 }
 
-
 impl Conf {
     pub fn get_template(&self, fname: &Path) -> &str {
         self.get_backend(fname)
@@ -37,19 +30,16 @@ impl Conf {
     }
 
     pub fn get_backend(&self, fname: &Path) -> Option<Box<&dyn Backend>> {
-        let ext = fname.extension()
-                       .and_then(|ext| ext.to_str())
-                       .unwrap_or("");
+        let ext = fname.extension().and_then(|ext| ext.to_str()).unwrap_or("");
 
         match ext {
             "py" => Some(Box::new(&self.python)),
             "cc" | "cpp" | "cxx" => Some(Box::new(&self.clang)),
             "c" => Some(Box::new(&self.clang_c)),
-            _ => None
+            _ => None,
         }
     }
 }
-
 
 pub fn get_conf() -> Result<Conf, Error> {
     let mut current = std::env::current_dir()?;
