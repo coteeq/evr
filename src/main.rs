@@ -1,6 +1,6 @@
 extern crate lazy_static;
 
-use clap::{App, AppSettings, Arg};
+use clap::{App, AppSettings, Arg, SubCommand};
 use env_logger;
 use log::error;
 use std::io::prelude::*;
@@ -16,6 +16,7 @@ fn main() {
         .author("syn")
         .setting(AppSettings::ColoredHelp)
         .setting(AppSettings::UnifiedHelpMessage)
+        .subcommand(SubCommand::with_name("where"))
         .arg(
             Arg::with_name("src")
                 .required(true)
@@ -47,6 +48,17 @@ fn main() {
             std::process::exit(64); // EX_USAGE (BSD sysexits(3))
         }
     };
+
+    match matches.subcommand() {
+        ("where", Some(_submodule)) => {
+            match backends::get_binary_by_filename(src_path.as_ref()) {
+                Ok(path) => eprintln!("{}", path.display()),
+                Err(e) => error!("No binary: {}", e),
+            }
+            return;
+        }
+        _ => {}
+    }
 
     if src_path.exists() {
         if let Some(backend) = config.get_backend(&src_path) {

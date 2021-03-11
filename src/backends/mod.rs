@@ -1,6 +1,8 @@
 use crate::wait::ChildExitStatus;
 use lazy_static::lazy_static;
+use std::collections::hash_map::DefaultHasher;
 use std::env::temp_dir;
+use std::hash::{Hash, Hasher};
 use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
 
@@ -37,4 +39,14 @@ fn mk_tmp_dir() -> std::io::Result<&'static std::path::PathBuf> {
         }
     }
     Ok(&*EVR_TMP_DIR)
+}
+
+pub fn get_binary_by_filename(fname: &Path) -> std::io::Result<PathBuf> {
+    let hashed_fname = {
+        let mut hasher = DefaultHasher::new();
+        fname.hash(&mut hasher);
+        format!("{:x}", hasher.finish())
+    };
+
+    Ok(mk_tmp_dir()?.join(hashed_fname))
 }

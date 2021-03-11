@@ -1,9 +1,8 @@
-use crate::backends::{mk_tmp_dir, Backend, RunError};
+use super::get_binary_by_filename;
+use crate::backends::{Backend, RunError};
 use crate::serde_duration::deserialize_duration;
 use crate::wait::{wait_child, ChildExitStatus};
 use serde_derive::Deserialize;
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
 use std::io::{Error, ErrorKind, Result as IoResult};
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -29,16 +28,6 @@ fn default_cc() -> String {
 
 fn default_timeout() -> Duration {
     Duration::from_secs(1)
-}
-
-fn get_binary_by_filename(fname: &Path) -> IoResult<PathBuf> {
-    let hashed_fname = {
-        let mut hasher = DefaultHasher::new();
-        fname.hash(&mut hasher);
-        format!("{:x}", hasher.finish())
-    };
-
-    Ok(mk_tmp_dir()?.join(hashed_fname))
 }
 
 impl ClangBackend {
