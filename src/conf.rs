@@ -23,12 +23,6 @@ pub struct Conf {
 }
 
 impl Conf {
-    pub fn get_template(&self, fname: &Path) -> &str {
-        self.get_backend(fname)
-            .and_then(|backend| backend.get_template())
-            .unwrap_or("")
-    }
-
     pub fn get_backend(&self, fname: &Path) -> Option<Box<&dyn Backend>> {
         let ext = fname.extension().and_then(|ext| ext.to_str()).unwrap_or("");
 

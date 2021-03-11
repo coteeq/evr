@@ -3,7 +3,6 @@ extern crate lazy_static;
 use clap::{App, AppSettings, Arg, SubCommand};
 use env_logger;
 use log::error;
-use std::io::prelude::*;
 
 mod backends;
 mod conf;
@@ -78,11 +77,6 @@ fn main() {
             error!("could not match backend");
         }
     } else {
-        let template = config.get_template(&src_path).as_bytes();
-        if let Err(err) =
-            std::fs::File::create(&src_path).and_then(|mut file| file.write_all(template))
-        {
-            error!("{}", err);
-        }
+        error!("File {} does not exist", src_path.display());
     };
 }
